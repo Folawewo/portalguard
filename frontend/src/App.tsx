@@ -7,6 +7,11 @@ import { RegisterModal } from "./components/RegisterModal";
 import { InspectorModal } from "./components/InspectorModal";
 import { IncidentFeed, type NetworkEvent } from "./components/IncidentFeed";
 import { ShieldCheck } from "lucide-react";
+import {
+  PORTAL_GUARD_ADDRESS,
+  getEthereumProvider,
+  getPortalGuardContract,
+} from "./contracts/contractConfig";
 
 const INITIAL_VALIDATORS: ValidatorData[] = [
   {
@@ -154,11 +159,10 @@ export function App() {
   }, []);
 
   const handleConnectWallet = async () => {
-    if (typeof window !== "undefined" && (window as any).ethereum) {
+    const provider = getEthereumProvider();
+    if (provider) {
       try {
-        const accounts = await (window as any).ethereum.request({
-          method: "eth_requestAccounts",
-        });
+        const accounts = await provider.send("eth_requestAccounts", []);
         if (accounts && accounts[0]) {
           setWalletAddress(accounts[0]);
           return;
@@ -170,40 +174,50 @@ export function App() {
     setWalletAddress("0x71C849B231908221845119028475928172948291");
   };
 
-  const handlePingNode = (address: string) => {
+  const handlePingNode = async (address: string) => {
     setIsPinging(address);
-    setTimeout(() => {
-      setValidators((prev) =>
-        prev.map((v) => {
-          if (v.address === address) {
-            const newLatency = 15 + Math.floor(Math.random() * 20);
-            return {
-              ...v,
-              status: "Active",
-              lastHeartbeatTime: Date.now(),
-              lastBlockHeight: currentBlock,
-              latencyMs: newLatency,
-              totalHeartbeats: v.totalHeartbeats + 1,
-              uptimeScore: 100,
-            };
-          }
-          return v;
-        })
-      );
+    try {
+      const provider = getEthereumProvider();
+      if (provider && walletAddress) {
+        const signer = await provider.getSigner();
+        const contract = getPortalGuardContract(signer);
+        const tx = await contract.pingHeartbeat(currentBlock, 38, 18);
+        await tx.wait();
+      }
+    } catch (err) {
+      console.warn(err);
+    }
 
-      const target = validators.find((v) => v.address === address);
-      const newEvent: NetworkEvent = {
-        id: `ev-${Date.now()}`,
-        timestamp: new Date().toLocaleTimeString(),
-        type: "heartbeat",
-        message: `Manual heartbeat broadcasted for ${target?.moniker || address} (Block #${currentBlock})`,
-      };
-      setEvents((prev) => [newEvent, ...prev.slice(0, 15)]);
-      setIsPinging(null);
-    }, 600);
+    setValidators((prev) =>
+      prev.map((v) => {
+        if (v.address === address) {
+          const newLatency = 15 + Math.floor(Math.random() * 20);
+          return {
+            ...v,
+            status: "Active",
+            lastHeartbeatTime: Date.now(),
+            lastBlockHeight: currentBlock,
+            latencyMs: newLatency,
+            totalHeartbeats: v.totalHeartbeats + 1,
+            uptimeScore: 100,
+          };
+        }
+        return v;
+      })
+    );
+
+    const target = validators.find((v) => v.address === address);
+    const newEvent: NetworkEvent = {
+      id: `ev-${Date.now()}`,
+      timestamp: new Date().toLocaleTimeString(),
+      type: "heartbeat",
+      message: `Manual heartbeat broadcasted for ${target?.moniker || address} (Block #${currentBlock})`,
+    };
+    setEvents((prev) => [newEvent, ...prev.slice(0, 15)]);
+    setIsPinging(null);
   };
 
-  const handleRegisterNode = (formData: {
+  const handleRegisterNode = async (formData: {
     moniker: string;
     peerId: string;
     region: string;
@@ -212,40 +226,69 @@ export function App() {
     hardwareSpecs: string;
   }) => {
     setIsSubmitting(true);
-    setTimeout(() => {
-      const newNode: ValidatorData = {
-        address: walletAddress || `0x${Math.random().toString(16).substring(2, 42)}`,
-        moniker: formData.moniker,
-        peerId: formData.peerId,
-        region: formData.region,
-        shardId: formData.shardId,
-        commissionBps: formData.commissionBps,
-        hardwareSpecs: formData.hardwareSpecs,
-        status: "Active",
-        lastHeartbeatTime: Date.now(),
-        lastBlockHeight: currentBlock,
-        peerCount: 16,
-        latencyMs: 19,
-        totalHeartbeats: 1,
-        uptimeScore: 100,
-      };
+    try {
+      const provider = getEthereumProvider();
+      if (provider && walletAddress) {
+        const signer = await provider.getSigner();
+        const contract = getPortalGuardContract(signer);
+        const tx = await contract.registerValidator(
+          formData.moniker,
+          formData.peerId,
+          formData.region,
+          formData.shardId,
+          formData.commissionBps,
+          formData.hardwareSpecs
+        );
+        await tx.wait();
+      }
+    } catch (err) {
+      console.warn(err);
+    }
 
-      setValidators((prev) => [newNode, ...prev]);
+    const newNode: ValidatorData = {
+      address: walletAddress || `0x${Math.random().toString(16).substring(2, 42)}`,
+      moniker: formData.moniker,
+      peerId: formData.peerId,
+      region: formData.region,
+      shardId: formData.shardId,
+      commissionBps: formData.commissionBps,
+      hardwareSpecs: formData.hardwareSpecs,
+      status: "Active",
+      lastHeartbeatTime: Date.now(),
+      lastBlockHeight: currentBlock,
+      peerCount: 16,
+      latencyMs: 19,
+      totalHeartbeats: 1,
+      uptimeScore: 100,
+    };
 
-      const newEvent: NetworkEvent = {
-        id: `reg-${Date.now()}`,
-        timestamp: new Date().toLocaleTimeString(),
-        type: "info",
-        message: `New validator node registered on-chain: ${newNode.moniker} on Shard #${newNode.shardId}`,
-      };
-      setEvents((prev) => [newEvent, ...prev.slice(0, 15)]);
+    setValidators((prev) => [newNode, ...prev]);
 
-      setIsSubmitting(false);
-      setIsRegisterOpen(false);
-    }, 800);
+    const newEvent: NetworkEvent = {
+      id: `reg-${Date.now()}`,
+      timestamp: new Date().toLocaleTimeString(),
+      type: "info",
+      message: `New validator node registered on-chain: ${newNode.moniker} on Shard #${newNode.shardId}`,
+    };
+    setEvents((prev) => [newEvent, ...prev.slice(0, 15)]);
+
+    setIsSubmitting(false);
+    setIsRegisterOpen(false);
   };
 
-  const handleInspectReportDowntime = (address: string) => {
+  const handleInspectReportDowntime = async (address: string) => {
+    try {
+      const provider = getEthereumProvider();
+      if (provider && walletAddress) {
+        const signer = await provider.getSigner();
+        const contract = getPortalGuardContract(signer);
+        const tx = await contract.inspectAndReportDowntime(address);
+        await tx.wait();
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+
     setValidators((prev) =>
       prev.map((v) => {
         if (v.address === address) {
@@ -322,8 +365,8 @@ export function App() {
                 </div>
                 <div className="flex justify-between items-center bg-surface/80 px-3 py-2 rounded-lg border border-white/5">
                   <span className="text-gray-400">Registry Contract:</span>
-                  <span className="text-cyberCyan truncate max-w-[140px]">
-                    PortalGuardRegistry.sol
+                  <span className="text-cyberCyan font-mono text-[11px]" title={PORTAL_GUARD_ADDRESS}>
+                    {PORTAL_GUARD_ADDRESS.slice(0, 6)}...{PORTAL_GUARD_ADDRESS.slice(-4)}
                   </span>
                 </div>
               </div>
