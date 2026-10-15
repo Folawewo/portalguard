@@ -2,7 +2,7 @@
 
 Real-time validator node monitoring, 3D topology visualizer, and automated slashing watchdog for the Portaldot 256-shard network.
 
-Built for **Portaldot Hacker House 2026** — **Track 3: Node Operations & Tooling**.
+Built for **Portaldot Hacker House 2026** - **Track 3: Node Operations and Tooling**.
 
 ---
 
@@ -24,18 +24,18 @@ When validators miss blocks or drop offline without warning:
 ```
                                   ┌──────────────────────────────────────────────┐
                                   │           Portaldot Layer 0 (DHSA)           │
-                                  │      256 Parallel Shards • Sub-second Finality│
+                                  │     256 Parallel Shards • Sub-second Finality│
                                   └──────────────────────▲───────────────────────┘
                                                          │
                          ┌───────────────────────────────┴───────────────────────────────┐
                          │                                                               │
             ┌────────────┴─────────────┐                                   ┌─────────────┴─────────────┐
             │   Smart Contract Layer   │                                   │    Frontend Telemetry UI  │
-            │ PortalGuardRegistry.sol  │                                   │   Vite + React 19 + Three.js│
+            │ PortalGuardRegistry.sol  │                                   │ Vite + React 19 + Three.js│
             ├──────────────────────────┤                                   ├───────────────────────────┤
-            │ • Validator Registration │ <========= Ethers / ABI =========> │ • 3D Particle Shard Globe │
+            │ • Validator Registration │ <-------- Ethers / ABI ---------> │ • 3D Particle Shard Globe │
             │ • Heartbeat Ping SLA     │          Telemetry Stream         │ • Real-time Metrics Bar   │
-            │ • Dynamic Uptime (0-100) │                                   │ • Fleet Search & Filter   │
+            │ • Dynamic Uptime (0-100) │                                   │ • Fleet Search and Filter │
             │ • Slashing Watchdog Alert│                                   │ • Live Incident Sentinel  │
             └──────────────────────────┘                                   └───────────────────────────┘
 ```
@@ -56,12 +56,12 @@ When validators miss blocks or drop offline without warning:
 - SLA heartbeat tracking mechanism recording block heights, peer counts, and latency in milliseconds.
 - Dynamic uptime score algorithm calculating health from 0 to 100 based on elapsed time since the last heartbeat.
 
-### 3. Automated Slashing Sentinel & Watchdog
+### 3. Automated Slashing Sentinel and Watchdog
 - Enforces a 3,600s (1-hour) grace period and 7,200s (2-hour) slashing threshold.
 - Allows watchdogs, delegators, or automated keepers to call `inspectAndReportDowntime(operator)`.
 - Emits on-chain `SlashingWarningEmitted` events to trigger automated defensive delegation reassignment.
 
-### 4. Fleet Management & Inspection Modal
+### 4. Fleet Management and Inspection Modal
 - Search validator fleet by moniker, operator address, peer ID, region, or shard number.
 - Filter by status (`All`, `Active`, `Degraded`).
 - Detailed inspector view displaying hardware specifications (CPU architecture, RAM, storage configuration), network latency, and ping logs.
