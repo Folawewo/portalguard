@@ -1,0 +1,25 @@
+{
+  "name": "portalguard",
+  "version": "1.0.0",
+  "description": "a real-time validator node monitoring and network telemetry dashboard for the portaldot network.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Folawewo/portalguard.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Folawewo/portalguard/issues"
+  },
+  "homepage": "https://github.com/Folawewo/portalguard#readme",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^7.0.0",
+    "hardhat": "^3.19.0"
+  },
+  "type": "module"
+}
